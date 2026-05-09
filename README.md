@@ -37,3 +37,12 @@ After browser login, ocgo starts OpenConnect with the captured cookie:
 ```sh
 sudo openconnect --protocol=nc --cookie-on-stdin <server-url>
 ```
+
+To print the final OpenConnect command instead of starting the VPN:
+
+```sh
+go run . --no-c -n DSID "https://vpn.example.org/Linux"
+```
+
+This mode does not ask sudo and does not require OpenConnect to be installed, but
+it prints the authentication cookie to standard output as part of the command.

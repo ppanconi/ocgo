@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/chromedp/cdproto/network"
@@ -24,6 +25,7 @@ type config struct {
 	cookieName string
 	clickLink  string
 	timeout    time.Duration
+	noConnect  bool
 }
 
 func main() {
@@ -35,13 +37,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := authorizeVPN(); err != nil {
-		log.Fatal(err)
+	if !cfg.noConnect {
+		if err := ensureOpenConnectAvailable(); err != nil {
+			log.Fatal(err)
+		}
+		if err := authorizeVPN(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	cookie, err := extractCookie(context.Background(), cfg)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if cfg.noConnect {
+		printOpenConnectCommand(cfg.server, cfg.cookieName, cookie)
+		return
 	}
 
 	if err := startVPN(cfg.server, cfg.cookieName, cookie); err != nil {
@@ -58,6 +70,7 @@ func parseArgs(args []string) (config, error) {
 	fs.StringVar(&cfg.cookieName, "name", "DSID", "name of the cookie")
 	fs.StringVar(&cfg.clickLink, "click-link", defaultClickLink, "CSS selector of a link to click after each page load, if present")
 	fs.DurationVar(&cfg.timeout, "timeout", 10*time.Minute, "maximum time to wait for the cookie")
+	fs.BoolVar(&cfg.noConnect, "no-c", false, "print the OpenConnect command after login instead of asking sudo and starting the VPN")
 
 	fs.Usage = func() {
 		fmt.Fprintf(fs.Output(), "Usage: %s [options] <server-url>\n\n", fs.Name())
@@ -218,6 +231,45 @@ func startVPN(server, cookieName, cookieValue string) error {
 	return nil
 }
 
+func printOpenConnectCommand(server, cookieName, cookieValue string) {
+	fmt.Printf("\nAuthorization succeeded.\n\nTo start the VPN session, run:\n\n  %s\n\n",
+		shellCommand([]string{
+			"sudo",
+			"openconnect",
+			"--protocol=nc",
+			"--cookie",
+			fmt.Sprintf("%s=%s", cookieName, cookieValue),
+			server,
+		}),
+	)
+}
+
+func shellCommand(args []string) string {
+	command := ""
+	for i, arg := range args {
+		if i > 0 {
+			command += " "
+		}
+		command += shellQuote(arg)
+	}
+	return command
+}
+
+func shellQuote(s string) string {
+	if s == "" {
+		return "''"
+	}
+
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') ||
+			r == '_' || r == '-' || r == '.' || r == '/' || r == ':' || r == '=' {
+			continue
+		}
+		return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'"
+	}
+	return s
+}
+
 func authorizeVPN() error {
 	if os.Geteuid() == 0 {
 		return nil
@@ -231,6 +283,76 @@ func authorizeVPN() error {
 		return fmt.Errorf("sudo authorization failed: %w", err)
 	}
 	return nil
+}
+
+func ensureOpenConnectAvailable() error {
+	if _, err := exec.LookPath("openconnect"); err == nil {
+		return nil
+	}
+
+	return fmt.Errorf("openconnect command was not found.\n\nInstall OpenConnect for your operating system, then run ocgo again:\n\n%s",
+		openConnectInstallHint(),
+	)
+}
+
+func openConnectInstallHint() string {
+	osRelease, err := readOSRelease("/etc/os-release")
+	if err != nil {
+		return genericOpenConnectInstallHint()
+	}
+
+	ids := strings.Join([]string{osRelease["ID"], osRelease["ID_LIKE"]}, " ")
+	switch {
+	case containsAnyID(ids, "debian", "ubuntu"):
+		return "  sudo apt install openconnect"
+	case containsAnyID(ids, "fedora", "rhel", "centos"):
+		return "  sudo dnf install openconnect"
+	case containsAnyID(ids, "arch", "manjaro"):
+		return "  sudo pacman -S openconnect"
+	default:
+		return genericOpenConnectInstallHint()
+	}
+}
+
+func genericOpenConnectInstallHint() string {
+	return strings.Join([]string{
+		"  Debian/Ubuntu: sudo apt install openconnect",
+		"  Fedora/RHEL:   sudo dnf install openconnect",
+		"  Arch/Manjaro:  sudo pacman -S openconnect",
+	}, "\n")
+}
+
+func readOSRelease(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	values := map[string]string{}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		values[key] = strings.Trim(strings.TrimSpace(value), `"`)
+	}
+	return values, nil
+}
+
+func containsAnyID(ids string, candidates ...string) bool {
+	fields := strings.Fields(strings.ToLower(ids))
+	for _, field := range fields {
+		for _, candidate := range candidates {
+			if field == candidate {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func openConnectCommand(server string) *exec.Cmd {
