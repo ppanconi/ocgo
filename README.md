@@ -222,5 +222,4 @@ resulting cookie to OpenConnect.
 
 ## License
 
-Add a license before publishing this repository publicly. If you want broad
-reuse, MIT or Apache-2.0 are common choices for small command-line tools.
+This project is released under the MIT License. See [LICENSE](LICENSE).
