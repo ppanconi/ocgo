@@ -35,6 +35,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if err := authorizeVPN(); err != nil {
+		log.Fatal(err)
+	}
+
 	cookie, err := extractCookie(context.Background(), cfg)
 	if err != nil {
 		log.Fatal(err)
@@ -184,12 +188,6 @@ func readCookie(ctx context.Context, name string) (string, bool, error) {
 }
 
 func startVPN(server, cookieName, cookieValue string) error {
-	if os.Geteuid() != 0 {
-		if err := validateSudo(); err != nil {
-			return err
-		}
-	}
-
 	cmd := openConnectCommand(server)
 
 	stdin, err := cmd.StdinPipe()
@@ -220,7 +218,11 @@ func startVPN(server, cookieName, cookieValue string) error {
 	return nil
 }
 
-func validateSudo() error {
+func authorizeVPN() error {
+	if os.Geteuid() == 0 {
+		return nil
+	}
+
 	cmd := exec.Command("sudo", "-v")
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

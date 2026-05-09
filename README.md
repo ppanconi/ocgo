@@ -29,7 +29,8 @@ go run . -n DSID "https://vpn.example.org/Linux"
 ```
 
 Run ocgo as your normal desktop user, not with sudo. The browser login needs your
-desktop session; ocgo asks sudo only when OpenConnect is ready to start.
+desktop session; ocgo asks for sudo before opening the browser, then reuses that
+authorization when OpenConnect is ready to start.
 
 After browser login, ocgo starts OpenConnect with the captured cookie:
 
