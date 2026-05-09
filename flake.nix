@@ -14,6 +14,7 @@
           gopls
           golangci-lint
           chromium
+          openconnect
         ];
       };
     };

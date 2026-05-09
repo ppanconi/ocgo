@@ -27,3 +27,12 @@ Example:
 ```sh
 go run . -n DSID "https://vpn.example.org/Linux"
 ```
+
+Run ocgo as your normal desktop user, not with sudo. The browser login needs your
+desktop session; ocgo asks sudo only when OpenConnect is ready to start.
+
+After browser login, ocgo starts OpenConnect with the captured cookie:
+
+```sh
+sudo openconnect --protocol=nc --cookie-on-stdin <server-url>
+```

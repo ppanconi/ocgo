@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/chromedp/cdproto/network"
@@ -39,7 +40,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Print(cookie)
+	if err := startVPN(cfg.server, cfg.cookieName, cookie); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func parseArgs(args []string) (config, error) {
@@ -82,6 +85,9 @@ func extractCookie(parent context.Context, cfg config) (string, error) {
 		return "", err
 	}
 	defer os.RemoveAll(userDataDir)
+	if err := disableChromePasswordManager(userDataDir); err != nil {
+		return "", err
+	}
 
 	allocOpts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.UserDataDir(userDataDir),
@@ -92,6 +98,8 @@ func extractCookie(parent context.Context, cfg config) (string, error) {
 		// chromedp.Flag("disable-gpu", false),
 		chromedp.Flag("no-first-run", true),
 		chromedp.Flag("no-default-browser-check", true),
+		chromedp.Flag("disable-save-password-bubble", true),
+		chromedp.Flag("disable-features", "PasswordManagerOnboarding,PasswordManagerAccountStorage,PasswordLeakDetection"),
 	)
 	if chromePath := findChromePath(); chromePath != "" {
 		allocOpts = append(allocOpts, chromedp.ExecPath(chromePath))
@@ -173,6 +181,107 @@ func readCookie(ctx context.Context, name string) (string, bool, error) {
 	}
 
 	return "", false, nil
+}
+
+func startVPN(server, cookieName, cookieValue string) error {
+	if os.Geteuid() != 0 {
+		if err := validateSudo(); err != nil {
+			return err
+		}
+	}
+
+	cmd := openConnectCommand(server)
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	if _, err := fmt.Fprintf(stdin, "%s=%s", cookieName, cookieValue); err != nil {
+		_ = stdin.Close()
+		_ = cmd.Process.Kill()
+		return err
+	}
+	if err := stdin.Close(); err != nil {
+		_ = cmd.Process.Kill()
+		return err
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("VPN disconnected: %w", err)
+	}
+	return nil
+}
+
+func validateSudo() error {
+	cmd := exec.Command("sudo", "-v")
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("sudo authorization failed: %w", err)
+	}
+	return nil
+}
+
+func openConnectCommand(server string) *exec.Cmd {
+	args := []string{
+		"--protocol=nc",
+		"--cookie-on-stdin",
+		server,
+	}
+	if os.Geteuid() == 0 {
+		return exec.Command("openconnect", args...)
+	}
+	return exec.Command("sudo", append([]string{"-n", "openconnect"}, args...)...)
+}
+
+func disableChromePasswordManager(userDataDir string) error {
+	defaultProfileDir := filepath.Join(userDataDir, "Default")
+	if err := os.MkdirAll(defaultProfileDir, 0o700); err != nil {
+		return err
+	}
+
+	preferences := map[string]any{
+		"credentials_enable_service":    false,
+		"credentials_enable_autosignin": false,
+		"autofill": map[string]any{
+			"credit_card_enabled": false,
+			"profile_enabled":     false,
+		},
+		"profile": map[string]any{
+			"password_manager_enabled":        false,
+			"password_manager_leak_detection": false,
+		},
+	}
+
+	data, err := json.Marshal(preferences)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(defaultProfileDir, "Preferences"), data, 0o600); err != nil {
+		return err
+	}
+
+	policyDir := filepath.Join(userDataDir, "policies", "managed")
+	if err := os.MkdirAll(policyDir, 0o700); err != nil {
+		return err
+	}
+	policy := map[string]any{
+		"PasswordManagerEnabled": false,
+	}
+	data, err = json.Marshal(policy)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(policyDir, "ocgo.json"), data, 0o600)
 }
 
 func findChromePath() string {
