@@ -53,7 +53,7 @@ sudo pacman -S openconnect
 ## Install
 
 Download the latest prebuilt release archive for your platform from the GitHub
-[Releases](releases) page.
+[Releases](https://github.com/ppanconi/ocgo/releases) page.
 
 Released archives are provided for:
 
