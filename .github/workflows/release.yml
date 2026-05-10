@@ -52,13 +52,17 @@ jobs:
           dist_dir="dist"
           archive_base="ocgo_${version}_${GOOS}_${GOARCH}"
           binary_name="ocgo"
+          archive_name="${archive_base}.tar.gz"
 
           mkdir -p "${dist_dir}/${archive_base}"
           go build -trimpath -ldflags="-s -w" -o "${dist_dir}/${archive_base}/${binary_name}" .
           cp README.md LICENSE "${dist_dir}/${archive_base}/"
 
-          tar -C "${dist_dir}" -czf "${dist_dir}/${archive_base}.tar.gz" "${archive_base}"
-          shasum -a 256 "${dist_dir}/${archive_base}.tar.gz" > "${dist_dir}/${archive_base}.tar.gz.sha256"
+          tar -C "${dist_dir}" -czf "${dist_dir}/${archive_name}" "${archive_base}"
+          (
+            cd "${dist_dir}"
+            shasum -a 256 "${archive_name}" > "${archive_name}.sha256"
+          )
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

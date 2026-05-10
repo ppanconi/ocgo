@@ -50,6 +50,50 @@ sudo dnf install openconnect
 sudo pacman -S openconnect
 ```
 
+## Install
+
+Download the latest prebuilt release archive for your platform from the GitHub
+[Releases](https://github.com/panks/ocgo/releases) page.
+
+Released archives are provided for:
+
+- Linux amd64
+- Linux arm64
+- macOS amd64
+- macOS arm64
+
+Each release includes:
+
+- `ocgo` binary
+- `README.md`
+- `LICENSE`
+- `.sha256` checksum file alongside the archive
+
+Typical install steps:
+
+```sh
+# 1. Download both the archive and its matching .sha256 file from GitHub Releases
+# 2. Verify the checksum if desired
+shasum -a 256 -c ocgo_v0.1.0_linux_amd64.tar.gz.sha256
+
+# 3. Extract the archive
+tar -xzf ocgo_v0.1.0_linux_amd64.tar.gz
+
+# 4. Install the binary somewhere in PATH
+sudo install -m 0755 ocgo_v0.1.0_linux_amd64/ocgo /usr/local/bin/ocgo
+```
+
+The checksum command expects the archive and `.sha256` file to be in the same
+directory after download.
+
+Confirm the installation:
+
+```sh
+ocgo -h
+```
+
+Note: On MacOS probably you need to confirm the application in System Settings/Privacy & Security
+
 ## Usage
 
 Run `ocgo` as your normal desktop user, not with `sudo`.
