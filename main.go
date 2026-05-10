@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -296,6 +297,10 @@ func ensureOpenConnectAvailable() error {
 }
 
 func openConnectInstallHint() string {
+	if runtime.GOOS == "darwin" {
+		return "  brew install openconnect"
+	}
+
 	osRelease, err := readOSRelease("/etc/os-release")
 	if err != nil {
 		return genericOpenConnectInstallHint()
@@ -316,6 +321,7 @@ func openConnectInstallHint() string {
 
 func genericOpenConnectInstallHint() string {
 	return strings.Join([]string{
+		"  macOS:          brew install openconnect",
 		"  Debian/Ubuntu: sudo apt install openconnect",
 		"  Fedora/RHEL:   sudo dnf install openconnect",
 		"  Arch/Manjaro:  sudo pacman -S openconnect",

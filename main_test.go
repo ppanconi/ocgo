@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -58,5 +59,12 @@ func TestReadOSRelease(t *testing.T) {
 	}
 	if got["ID"] != "ubuntu" || got["ID_LIKE"] != "debian" {
 		t.Fatalf("readOSRelease() = %#v", got)
+	}
+}
+
+func TestOpenConnectInstallHintIncludesMacOS(t *testing.T) {
+	got := genericOpenConnectInstallHint()
+	if !strings.Contains(got, "macOS:          brew install openconnect") {
+		t.Fatalf("genericOpenConnectInstallHint() = %q", got)
 	}
 }

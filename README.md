@@ -20,6 +20,7 @@ terminal username/password prompt. `ocgo` bridges that flow:
 
 ## Requirements
 
+`ocgo` is compiled and tested on macOS and most common Linux distributions.
 Runtime requirements:
 
 - Chrome or Chromium available in `PATH`
@@ -33,9 +34,12 @@ Runtime requirements:
 - `chromium-browser`
 - `chrome`
 
-Install OpenConnect with your system package manager:
+Install OpenConnect with your platform package manager:
 
 ```sh
+# macOS (Homebrew)
+brew install openconnect
+
 # Debian / Ubuntu
 sudo apt install openconnect
 
@@ -72,8 +76,8 @@ sudo ocgo https://vpn.example.org/saml
 ```
 
 Chrome/Chromium needs access to your desktop session. Running the whole program
-as root can break browser startup because root usually does not have your
-`DISPLAY` and X/Wayland authorization.
+as root can break browser startup or browser profile access on both Linux and
+macOS.
 
 If you prefer not to give `ocgo` sudo privileges, use the `--no-c` option and
 then run the generated OpenConnect command yourself.
