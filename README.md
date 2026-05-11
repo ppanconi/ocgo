@@ -267,7 +267,6 @@ It does not implement a VPN client itself. OpenConnect performs the VPN
 connection; `ocgo` only handles the browser authentication step and passes the
 resulting cookie to OpenConnect.
 
-
 ## License
 
 This project is released under the MIT License. See [LICENSE](LICENSE).

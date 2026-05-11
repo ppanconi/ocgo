@@ -4,3 +4,4 @@ bin/
 coverage.out
 ocgo-portable
 ocgo
+.vscode/settings.json
