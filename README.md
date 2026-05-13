@@ -143,6 +143,7 @@ Use it from a NixOS configuration:
     };
   };
 }
+```
 
 ## Usage
 
