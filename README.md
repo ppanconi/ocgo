@@ -74,13 +74,13 @@ Typical install steps:
 ```sh
 # 1. Download both the archive and its matching .sha256 file from GitHub Releases
 # 2. Verify the checksum if desired
-shasum -a 256 -c ocgo_v0.1.0_linux_amd64.tar.gz.sha256
+shasum -a 256 -c ocgo_v1.0.1_linux_amd64.tar.gz.sha256
 
 # 3. Extract the archive
-tar -xzf ocgo_v0.1.0_linux_amd64.tar.gz
+tar -xzf ocgo_v1.0.1_linux_amd64.tar.gz
 
 # 4. Install the binary somewhere in PATH
-sudo install -m 0755 ocgo_v0.1.0_linux_amd64/ocgo /usr/local/bin/ocgo
+sudo install -m 0755 ocgo_v1.0.1_linux_amd64/ocgo /usr/local/bin/ocgo
 ```
 
 The checksum command expects the archive and `.sha256` file to be in the same
@@ -105,7 +105,7 @@ nix run github:ppanconi/ocgo -- -h
 Run a specific tagged release:
 
 ```sh
-nix run github:ppanconi/ocgo/v0.1.0 -- -h
+nix run github:ppanconi/ocgo/v1.0.1 -- -h
 ```
 
 On Linux, the flake package wraps `ocgo` with Nix-provided `openconnect` and
@@ -121,14 +121,14 @@ nix profile install github:ppanconi/ocgo
 Or install a specific tagged release:
 
 ```sh
-nix profile install github:ppanconi/ocgo/v0.1.0
+nix profile install github:ppanconi/ocgo/v1.0.1
 ```
 
 Use it from a NixOS configuration:
 
 ```nix
 {
-  inputs.ocgo.url = "github:ppanconi/ocgo/v0.1.0";
+  inputs.ocgo.url = "github:ppanconi/ocgo/v1.0.1";
 
   outputs = { nixpkgs, ocgo, ... }: {
     nixosConfigurations.my-host = nixpkgs.lib.nixosSystem {
