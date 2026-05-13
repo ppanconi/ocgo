@@ -39,6 +39,10 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Validate release documentation
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: scripts/prepare-release.sh --check "${GITHUB_REF_NAME}"
+
       - name: Run tests
         run: go test ./...
 

@@ -94,6 +94,56 @@ ocgo -h
 
 Note: On MacOS probably you need to confirm the application in System Settings/Privacy & Security
 
+### Nix / NixOS
+
+This repository is also a Nix flake. Run it directly:
+
+```sh
+nix run github:ppanconi/ocgo -- -h
+```
+
+Run a specific tagged release:
+
+```sh
+nix run github:ppanconi/ocgo/v0.1.0 -- -h
+```
+
+On Linux, the flake package wraps `ocgo` with Nix-provided `openconnect` and
+`chromium` in `PATH`. On macOS, it wraps `ocgo` with Nix-provided `openconnect`
+and expects Chrome to be installed normally on the system.
+
+Install it into a user profile:
+
+```sh
+nix profile install github:ppanconi/ocgo
+```
+
+Or install a specific tagged release:
+
+```sh
+nix profile install github:ppanconi/ocgo/v0.1.0
+```
+
+Use it from a NixOS configuration:
+
+```nix
+{
+  inputs.ocgo.url = "github:ppanconi/ocgo/v0.1.0";
+
+  outputs = { nixpkgs, ocgo, ... }: {
+    nixosConfigurations.my-host = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        {
+          environment.systemPackages = [
+            ocgo.packages.x86_64-linux.default
+          ];
+        }
+      ];
+    };
+  };
+}
+
 ## Usage
 
 Run `ocgo` as your normal desktop user, not with `sudo`.
@@ -217,6 +267,18 @@ Using the included Nix development shell:
 nix develop
 go build -o ocgo .
 ```
+
+## Release
+
+Create a release from a clean working tree:
+
+```sh
+scripts/release.sh v0.2.0
+```
+
+The release script updates README examples, commits that change if needed,
+creates the tag, and pushes the current branch plus the tag. The release
+workflow also checks that the README examples match the pushed tag.
 
 Run tests:
 
